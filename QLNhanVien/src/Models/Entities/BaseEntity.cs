@@ -1,5 +1,7 @@
 namespace QLNhanVien.src.Models.Entities;
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 /// <summary>
 /// Base entity với Id, CreatedAt, UpdatedAt - tất cả entities đều inherit từ đây
 /// </summary>
@@ -28,5 +30,6 @@ public abstract class BaseEntity
     /// <summary>
     /// Kiểm tra entity có bị soft delete hay không
     /// </summary>
+    [NotMapped]
     public bool IsDeleted => DeletedAt.HasValue;
 }

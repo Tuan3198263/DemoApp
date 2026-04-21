@@ -1,307 +1,155 @@
 using Microsoft.EntityFrameworkCore;
+using QLNhanVien.src.Common.Utilities;
 using QLNhanVien.src.Data;
-using QLNhanVien.src.Data.Repositories;
 using QLNhanVien.src.Models.DTOs;
 using QLNhanVien.src.Models.Entities;
 
 namespace QLNhanVien.src.Services;
 
-/// <summary>
-/// UserService - Implements IUserService
-/// Chứa toàn bộ business logic liên quan đến User
-/// </summary>
 public class UserService : IUserService
 {
-    private readonly IRepository<User> _userRepository;
+    private readonly AppDbContext _dbContext;
     private readonly ILogger<UserService> _logger;
 
-    public UserService(IRepository<User> userRepository, ILogger<UserService> logger)
+    public UserService(AppDbContext dbContext, ILogger<UserService> logger)
     {
-        _userRepository = userRepository;
+        _dbContext = dbContext;
         _logger = logger;
     }
 
-    public async Task<UserDto?> GetUserByIdAsync(int id, CancellationToken cancellationToken = default)
+    public async Task<PaginatedResponse<UserDto>> GetAllAsync(UserQueryRequest query, CancellationToken cancellationToken = default)
     {
-        try
+        var normalized = PaginationFilterHelper.Normalize(query.Page, query.PageSize, 100);
+
+        IQueryable<User> usersQuery = _dbContext.Users.AsNoTracking().Where(u => u.DeletedAt == null);
+        usersQuery = PaginationFilterHelper.ApplyUserFilter(usersQuery, query.Keyword, query.Status);
+        usersQuery = usersQuery.OrderByDescending(u => u.CreatedAt);
+
+        var totalItems = await usersQuery.CountAsync(cancellationToken);
+        var items = await usersQuery
+            .Skip((normalized.Page - 1) * normalized.PageSize)
+            .Take(normalized.PageSize)
+            .ToListAsync(cancellationToken);
+
+        return new PaginatedResponse<UserDto>
         {
-            var user = await _userRepository.GetByIdAsync(id, cancellationToken);
-            if (user == null)
+            Success = true,
+            Data = items.Select(MapToDto).ToList(),
+            Pagination = new PaginationInfo
             {
-                _logger.LogWarning("User with id {Id} not found", id);
-                return null;
-            }
-
-            return MapToDto(user);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving user with id {Id}", id);
-            throw;
-        }
+                Page = normalized.Page,
+                PageSize = normalized.PageSize,
+                TotalItems = totalItems,
+                TotalPages = totalItems == 0 ? 0 : (int)Math.Ceiling(totalItems / (double)normalized.PageSize)
+            },
+            Message = "Success"
+        };
     }
 
-    public async Task<List<UserDto>> GetAllActiveUsersAsync(CancellationToken cancellationToken = default)
+    public async Task<UserDto?> GetDetailAsync(int id, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            var users = await _userRepository.FindAsync(u => u.IsActive && u.IsCurrentlyActive(), cancellationToken);
-            return users.Select(MapToDto).ToList();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving all active users");
-            throw;
-        }
+        var user = await _dbContext.Users.AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, cancellationToken);
+
+        return user == null ? null : MapToDto(user);
     }
 
-    public async Task<PaginatedResponse<UserDto>> GetUsersPagedAsync(
-        int pageNumber,
-        int pageSize,
-        string? searchTerm = null,
-        CancellationToken cancellationToken = default)
+    public async Task<UserDto> CreateAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
     {
-        try
+        ValidateCreateRequest(request);
+
+        var normalizedUserName = request.UserName.Trim().ToLowerInvariant();
+        var normalizedEmail = request.Email.Trim().ToLowerInvariant();
+        var normalizedStatus = PaginationFilterHelper.NormalizeStatus(request.Status);
+
+        var usernameExists = await _dbContext.Users.AnyAsync(u => u.UserName == normalizedUserName && u.DeletedAt == null, cancellationToken);
+        if (usernameExists)
+            throw new InvalidOperationException("Username already exists");
+
+        var emailExists = !string.IsNullOrWhiteSpace(normalizedEmail)
+            && await _dbContext.Users.AnyAsync(u => u.Email == normalizedEmail && u.DeletedAt == null, cancellationToken);
+        if (emailExists)
+            throw new InvalidOperationException("Email already exists");
+
+        var user = new User
         {
-            _logger.LogInformation("Getting users: page={Page}, pageSize={PageSize}, search={Search}",
-                pageNumber, pageSize, searchTerm ?? "none");
+            UserName = normalizedUserName,
+            Password = BCrypt.Net.BCrypt.HashPassword(request.Password.Trim()),
+            FullName = request.FullName.Trim(),
+            Phone = request.Phone.Trim(),
+            Email = normalizedEmail,
+            Status = normalizedStatus,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
 
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 10;
-            if (pageSize > 100) pageSize = 100; // Max page size
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync(cancellationToken);
 
-            Func<IQueryable<User>, IQueryable<User>>? filter = null;
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                filter = q => q.Where(u =>
-                    u.FullName.Contains(searchTerm) ||
-                    u.Email.Contains(searchTerm) ||
-                    u.EmployeeCode.Contains(searchTerm)
-                );
-            }
-
-            var (users, totalCount) = await _userRepository.GetPagedAsync(
-                pageNumber,
-                pageSize,
-                filter,
-                cancellationToken
-            );
-
-            var dtos = users.Select(MapToDto).ToList();
-            var totalPages = (totalCount + pageSize - 1) / pageSize;
-
-            return new PaginatedResponse<UserDto>
-            {
-                Success = true,
-                Data = dtos,
-                Pagination = new PaginationInfo
-                {
-                    Page = pageNumber,
-                    PageSize = pageSize,
-                    TotalItems = totalCount,
-                    TotalPages = totalPages
-                } ?? new PaginationInfo(),
-                Message = "Success"
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving paged users");
-            throw;
-        }
+        _logger.LogInformation("Created user id={Id}, username={UserName}", user.Id, user.UserName);
+        return MapToDto(user);
     }
 
-    public async Task<UserDto> CreateUserAsync(CreateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken = default)
     {
-        try
+        var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Id == id && u.DeletedAt == null, cancellationToken);
+        if (user == null)
         {
-            _logger.LogInformation("Creating user: {EmployeeCode} - {FullName}", request.EmployeeCode, request.FullName);
-
-            // Validate
-            ValidateCreateRequest(request);
-
-            // Check duplicates
-            if (await EmailExistsAsync(request.Email, cancellationToken))
-                throw new InvalidOperationException($"Email '{request.Email}' already exists");
-
-            if (await EmployeeCodeExistsAsync(request.EmployeeCode, cancellationToken))
-                throw new InvalidOperationException($"Employee code '{request.EmployeeCode}' already exists");
-
-            // Create entity
-            var user = new User
-            {
-                FullName = request.FullName.Trim(),
-                Email = request.Email.Trim().ToLower(),
-                EmployeeCode = request.EmployeeCode.Trim(),
-                PhoneNumber = request.PhoneNumber?.Trim() ?? "",
-                Department = request.Department?.Trim() ?? "",
-                Position = request.Position?.Trim() ?? "",
-                Address = request.Address?.Trim() ?? "",
-                StartDate = request.StartDate,
-                IsActive = true
-            };
-
-            // Persist
-            await _userRepository.AddAsync(user, cancellationToken);
-            _logger.LogInformation("User created successfully: {Id} - {EmployeeCode}", user.Id, user.EmployeeCode);
-
-            return MapToDto(user);
+            return false;
         }
-        catch (InvalidOperationException ex)
-        {
-            _logger.LogWarning(ex, "Validation error creating user: {Message}", ex.Message);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating user");
-            throw;
-        }
+
+        user.DeletedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return true;
     }
 
-    public async Task<UserDto> UpdateUserAsync(int id, UpdateUserRequest request, CancellationToken cancellationToken = default)
+    public async Task<int> DeleteManyAsync(List<int> ids, CancellationToken cancellationToken = default)
     {
-        try
+        var validIds = ids.Where(i => i > 0).Distinct().ToList();
+        if (validIds.Count == 0)
         {
-            _logger.LogInformation("Updating user: {Id}", id);
-
-            var user = await _userRepository.GetByIdAsync(id, cancellationToken);
-            if (user == null)
-                throw new InvalidOperationException($"User with id {id} not found");
-
-            // Update fields
-            if (!string.IsNullOrWhiteSpace(request.FullName))
-                user.FullName = request.FullName.Trim();
-
-            if (!string.IsNullOrWhiteSpace(request.Email))
-            {
-                var newEmail = request.Email.Trim().ToLower();
-                if (newEmail != user.Email && await EmailExistsAsync(newEmail, cancellationToken))
-                    throw new InvalidOperationException($"Email '{newEmail}' already exists");
-                user.Email = newEmail;
-            }
-
-            if (!string.IsNullOrWhiteSpace(request.PhoneNumber))
-                user.PhoneNumber = request.PhoneNumber.Trim();
-
-            if (!string.IsNullOrWhiteSpace(request.Department))
-                user.Department = request.Department.Trim();
-
-            if (!string.IsNullOrWhiteSpace(request.Position))
-                user.Position = request.Position.Trim();
-
-            if (!string.IsNullOrWhiteSpace(request.Address))
-                user.Address = request.Address.Trim();
-
-            if (request.IsActive.HasValue)
-                user.IsActive = request.IsActive.Value;
-
-            if (request.EndDate.HasValue)
-                user.EndDate = request.EndDate.Value;
-
-            // Persist
-            await _userRepository.UpdateAsync(user, cancellationToken);
-            _logger.LogInformation("User updated successfully: {Id}", id);
-
-            return MapToDto(user);
+            return 0;
         }
-        catch (InvalidOperationException ex)
+
+        var users = await _dbContext.Users
+            .Where(u => validIds.Contains(u.Id) && u.DeletedAt == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var user in users)
         {
-            _logger.LogWarning(ex, "Validation error updating user {Id}: {Message}", id, ex.Message);
-            throw;
+            user.DeletedAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating user {Id}", id);
-            throw;
-        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return users.Count;
     }
 
-    public async Task<bool> DeleteUserAsync(int id, CancellationToken cancellationToken = default)
+    private static UserDto MapToDto(User user)
     {
-        try
-        {
-            _logger.LogInformation("Deleting user: {Id}", id);
-
-            var user = await _userRepository.GetByIdAsync(id, cancellationToken);
-            if (user == null)
-            {
-                _logger.LogWarning("User with id {Id} not found", id);
-                return false;
-            }
-
-            await _userRepository.DeleteAsync(user, cancellationToken);
-            _logger.LogInformation("User deleted successfully: {Id}", id);
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting user {Id}", id);
-            throw;
-        }
-    }
-
-    public async Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var normalizedEmail = email.Trim().ToLower();
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.Email == normalizedEmail, cancellationToken);
-            return user != null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking email exists: {Email}", email);
-            throw;
-        }
-    }
-
-    public async Task<bool> EmployeeCodeExistsAsync(string employeeCode, CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            var code = employeeCode.Trim();
-            var user = await _userRepository.FirstOrDefaultAsync(u => u.EmployeeCode == code, cancellationToken);
-            return user != null;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error checking employee code exists: {Code}", employeeCode);
-            throw;
-        }
-    }
-
-    // Private Methods
-    private static UserDto MapToDto(User user) =>
-        new UserDto
+        return new UserDto
         {
             Id = user.Id,
+            UserName = user.UserName,
             FullName = user.FullName,
+            Phone = user.Phone,
             Email = user.Email,
-            EmployeeCode = user.EmployeeCode,
-            PhoneNumber = user.PhoneNumber,
-            Department = user.Department,
-            Position = user.Position,
-            Address = user.Address,
-            IsActive = user.IsActive,
-            StartDate = user.StartDate,
-            EndDate = user.EndDate,
+            Status = user.Status,
             CreatedAt = user.CreatedAt,
             UpdatedAt = user.UpdatedAt
         };
+    }
 
     private static void ValidateCreateRequest(CreateUserRequest request)
     {
-        if (string.IsNullOrWhiteSpace(request.FullName))
-            throw new InvalidOperationException("Full name is required");
+        if (string.IsNullOrWhiteSpace(request.UserName))
+            throw new InvalidOperationException("Username is required");
 
-        if (string.IsNullOrWhiteSpace(request.Email) || !request.Email.Contains("@"))
-            throw new InvalidOperationException("Valid email is required");
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+            throw new InvalidOperationException("Password must be at least 6 characters");
 
-        if (string.IsNullOrWhiteSpace(request.EmployeeCode))
-            throw new InvalidOperationException("Employee code is required");
-
-        if (request.StartDate == default)
-            throw new InvalidOperationException("Start date is required");
+        if (!string.IsNullOrWhiteSpace(request.Email) && !request.Email.Contains('@'))
+            throw new InvalidOperationException("Email is invalid");
     }
 }

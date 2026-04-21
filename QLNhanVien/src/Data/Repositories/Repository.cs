@@ -50,7 +50,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         try
         {
-            return await _dbSet.FirstOrDefaultAsync(e => e.Id == id && !e.IsDeleted, cancellationToken);
+            return await _dbSet.FirstOrDefaultAsync(e => e.Id == id && e.DeletedAt == null, cancellationToken);
         }
         catch (Exception ex)
         {
@@ -63,7 +63,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         try
         {
-            return await _dbSet.Where(e => !e.IsDeleted).ToListAsync(cancellationToken);
+            return await _dbSet.Where(e => e.DeletedAt == null).ToListAsync(cancellationToken);
         }
         catch (Exception ex)
         {
@@ -77,7 +77,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         try
         {
             return await Task.FromResult(
-                _dbSet.Where(e => !e.IsDeleted).FirstOrDefault(predicate)
+                _dbSet.Where(e => e.DeletedAt == null).FirstOrDefault(predicate)
             );
         }
         catch (Exception ex)
@@ -92,7 +92,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         try
         {
             return await Task.FromResult(
-                _dbSet.Where(e => !e.IsDeleted).Where(predicate).ToList()
+                _dbSet.Where(e => e.DeletedAt == null).Where(predicate).ToList()
             );
         }
         catch (Exception ex)
@@ -106,7 +106,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         try
         {
-            var query = _dbSet.Where(e => !e.IsDeleted);
+            var query = _dbSet.Where(e => e.DeletedAt == null);
             if (predicate != null)
                 query = query.Where(predicate).AsQueryable();
 
@@ -220,7 +220,7 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
     {
         try
         {
-            var query = _dbSet.Where(e => !e.IsDeleted).AsQueryable();
+            var query = _dbSet.Where(e => e.DeletedAt == null).AsQueryable();
 
             if (filter != null)
                 query = filter(query);

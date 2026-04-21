@@ -1,53 +1,70 @@
 namespace QLNhanVien.src.Models.DTOs;
 
 /// <summary>
-/// UserDto - Trả về API response
+/// UserDto - thông tin tài khoản trả về API
 /// </summary>
 public class UserDto
 {
     public int Id { get; set; }
+    public string UserName { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public string EmployeeCode { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public string Department { get; set; } = string.Empty;
-    public string Position { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public bool IsActive { get; set; }
-    public DateTime StartDate { get; set; }
-    public DateTime? EndDate { get; set; }
+    public string Status { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
 
 /// <summary>
-/// CreateUserRequest - Tạo nhân viên mới
+/// CreateUserRequest - tạo tài khoản mới
 /// </summary>
 public class CreateUserRequest
 {
+    public string UserName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
-    public string EmployeeCode { get; set; } = string.Empty;
-    public string PhoneNumber { get; set; } = string.Empty;
-    public string Department { get; set; } = string.Empty;
-    public string Position { get; set; } = string.Empty;
-    public string Address { get; set; } = string.Empty;
-    public DateTime StartDate { get; set; }
+    public string Status { get; set; } = "admin";
 }
 
 /// <summary>
-/// UpdateUserRequest - Cập nhật thông tin nhân viên
+/// DeleteManyUsersRequest - xóa nhiều user
 /// </summary>
-public class UpdateUserRequest
+public class DeleteManyUsersRequest
 {
-    public string? FullName { get; set; }
-    public string? Email { get; set; }
-    public string? PhoneNumber { get; set; }
-    public string? Department { get; set; }
-    public string? Position { get; set; }
-    public string? Address { get; set; }
-    public bool? IsActive { get; set; }
-    public DateTime? EndDate { get; set; }
+    public List<int> UserIds { get; set; } = new();
+}
+
+public class UserQueryRequest
+{
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
+    public string? Keyword { get; set; }
+    public string? Status { get; set; }
+}
+
+public class AuthRegisterRequest
+{
+    public string UserName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Status { get; set; } = "admin";
+}
+
+public class AuthLoginRequest
+{
+    public string UserName { get; set; } = string.Empty;
+    public string Password { get; set; } = string.Empty;
+}
+
+public class AuthLoginResponse
+{
+    public string AccessToken { get; set; } = string.Empty;
+    public DateTime ExpiresAtUtc { get; set; }
+    public UserDto User { get; set; } = new();
 }
 
 /// <summary>
