@@ -1,0 +1,41 @@
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.userprefs
+*.sln.iml
+.NET
+packages/
+
+# Environment
+.env
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# NuGet
+.nuget/
+
+# Build
+dist/
+build/
+
+# OS
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+#Agent skill
+RULES.md
+README.md
