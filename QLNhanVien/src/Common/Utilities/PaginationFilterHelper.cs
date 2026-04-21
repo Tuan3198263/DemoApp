@@ -42,4 +42,28 @@ public static class PaginationFilterHelper
         var normalized = status?.Trim().ToLowerInvariant();
         return normalized == UserStatuses.Employee ? UserStatuses.Employee : UserStatuses.Admin;
     }
+
+    public static IQueryable<T> ApplySorting<T>(IQueryable<T> query, string? sortBy, bool descending = true) where T : BaseEntity
+    {
+        if (string.IsNullOrWhiteSpace(sortBy))
+        {
+            return descending ? query.OrderByDescending(e => e.CreatedAt) : query.OrderBy(e => e.CreatedAt);
+        }
+
+        var param = Expression.Parameter(typeof(T), "x");
+        var property = typeof(T).GetProperty(sortBy, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public);
+
+        if (property == null)
+        {
+            return descending ? query.OrderByDescending(e => e.CreatedAt) : query.OrderBy(e => e.CreatedAt);
+        }
+
+        var propertyAccess = Expression.MakeMemberAccess(param, property);
+        var orderByExpression = Expression.Lambda(propertyAccess, param);
+
+        var methodName = descending ? "OrderByDescending" : "OrderBy";
+        var resultExpression = Expression.Call(typeof(Queryable), methodName, new Type[] { typeof(T), property.PropertyType }, query.Expression, Expression.Quote(orderByExpression));
+
+        return query.Provider.CreateQuery<T>(resultExpression);
+    }
 }

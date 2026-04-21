@@ -21,6 +21,7 @@ public class AppDbContext : DbContext
 
     // DbSets
     public DbSet<User> Users { get; set; }
+    public DbSet<Employee> Employees { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

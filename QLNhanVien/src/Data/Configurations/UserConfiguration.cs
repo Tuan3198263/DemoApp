@@ -27,6 +27,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
 
         entity.Property(e => e.FullName)
             .HasColumnName("full_name")
+            .IsRequired()
             .HasMaxLength(255);
 
         entity.Property(e => e.Phone)
@@ -50,6 +51,9 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         entity.Property(e => e.UpdatedAt)
             .HasColumnName("updated_at")
             .HasDefaultValueSql("now() at time zone 'utc'");
+
+        entity.Property(e => e.UpdatedBy)
+            .HasColumnName("updated_by");
 
         entity.Property(e => e.DeletedAt)
             .HasColumnName("deleted_at");

@@ -28,6 +28,11 @@ public abstract class BaseEntity
     public DateTime? DeletedAt { get; set; }
 
     /// <summary>
+    /// ID người cập nhật lần cuối (tham chiếu User.Id)
+    /// </summary>
+    public int? UpdatedBy { get; set; }
+
+    /// <summary>
     /// Kiểm tra entity có bị soft delete hay không
     /// </summary>
     [NotMapped]
