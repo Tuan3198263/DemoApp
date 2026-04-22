@@ -1,0 +1,129 @@
+:root {
+  --sidebar-width: 260px;
+  --sidebar-collapsed-width: 88px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(160deg, #f4f7fb 0%, #eef2f8 100%);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  position: sticky;
+  top: 0;
+  transition: width 0.25s ease;
+  overflow: hidden;
+  z-index: 1030;
+}
+
+.sidebar.collapsed {
+  width: var(--sidebar-collapsed-width);
+}
+
+.sidebar.collapsed .brand-name,
+.sidebar.collapsed .nav-link span {
+  display: none;
+}
+
+.content-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+}
+
+.icon-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.65rem;
+}
+
+.mobile-sidebar {
+  display: none;
+}
+
+.mobile-backdrop {
+  display: none;
+}
+
+.login-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(25, 135, 84, 0.15), transparent 40%),
+    radial-gradient(circle at 85% 15%, rgba(13, 110, 253, 0.2), transparent 45%),
+    #f8f9fa;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 430px;
+}
+
+@media (max-width: 991.98px) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-sidebar {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 1041;
+  }
+
+  .mobile-sidebar.show {
+    transform: translateX(0);
+  }
+
+  .mobile-sidebar .sidebar {
+    display: block;
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  .mobile-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 1040;
+  }
+
+  .mobile-backdrop.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .topbar h1 {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,6 @@
+export const API_BASE_URL = 'http://localhost:5001'
+
+export const API_ENDPOINTS = {
+  AUTH_LOGIN: '/api/auth/login',
+  EMPLOYEES: '/api/employees',
+}
