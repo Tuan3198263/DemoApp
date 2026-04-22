@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using QLNhanVien.src.Models.DTOs;
 using QLNhanVien.src.Services;
-using System.Security.Claims;
 
 namespace QLNhanVien.src.Controllers;
 
@@ -16,12 +15,6 @@ public class EmployeesController : ControllerBase
     public EmployeesController(IEmployeeService employeeService)
     {
         _employeeService = employeeService;
-    }
-
-    private int GetCurrentUserId()
-    {
-        var userIdClaim = User.FindFirst("sub")?.Value ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        return int.TryParse(userIdClaim, out var userId) ? userId : 0;
     }
 
     [HttpGet]
@@ -47,7 +40,7 @@ public class EmployeesController : ControllerBase
             Descending = descending
         };
 
-        var result = await _employeeService.GetAllAsync(query, GetCurrentUserId(), cancellationToken);
+        var result = await _employeeService.GetAllAsync(query, cancellationToken);
         return Ok(result);
     }
 
@@ -80,7 +73,7 @@ public class EmployeesController : ControllerBase
     {
         try
         {
-            var created = await _employeeService.CreateAsync(request, GetCurrentUserId(), cancellationToken);
+            var created = await _employeeService.CreateAsync(request, cancellationToken);
             return CreatedAtAction(nameof(GetDetail), new { id = created.Id }, new ApiResponse<EmployeeDto>
             {
                 Success = true,
@@ -91,6 +84,42 @@ public class EmployeesController : ControllerBase
         catch (InvalidOperationException ex)
         {
             var statusCode = ex.Message.Contains("tồn tại", StringComparison.OrdinalIgnoreCase)
+                ? StatusCodes.Status409Conflict
+                : StatusCodes.Status400BadRequest;
+
+            return StatusCode(statusCode, new ApiErrorResponse
+            {
+                Message = ex.Message,
+                Errors = new Dictionary<string, List<string>>
+                {
+                    ["validation"] = new List<string> { ex.Message }
+                }
+            });
+        }
+    }
+
+    [HttpPost("batch")]
+    [ProducesResponseType(typeof(ApiResponse<List<EmployeeDto>>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<List<EmployeeDto>>>> CreateMany(
+        [FromBody] CreateManyEmployeeRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var createdEmployees = await _employeeService.CreateManyAsync(request.Employees, cancellationToken);
+            return StatusCode(StatusCodes.Status201Created, new ApiResponse<List<EmployeeDto>>
+            {
+                Success = true,
+                Data = createdEmployees,
+                Message = $"Tạo {createdEmployees.Count} nhân viên thành công"
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            var statusCode = ex.Message.Contains("trùng", StringComparison.OrdinalIgnoreCase) ||
+                             ex.Message.Contains("tồn tại", StringComparison.OrdinalIgnoreCase)
                 ? StatusCodes.Status409Conflict
                 : StatusCodes.Status400BadRequest;
 
@@ -116,7 +145,7 @@ public class EmployeesController : ControllerBase
     {
         try
         {
-            var updated = await _employeeService.UpdateAsync(id, request, GetCurrentUserId(), cancellationToken);
+            var updated = await _employeeService.UpdateAsync(id, request, cancellationToken);
             return Ok(new ApiResponse<EmployeeDto>
             {
                 Success = true,
@@ -142,7 +171,7 @@ public class EmployeesController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var deleted = await _employeeService.DeleteAsync(id, GetCurrentUserId(), cancellationToken);
+        var deleted = await _employeeService.DeleteAsync(id, cancellationToken);
         if (!deleted)
         {
             return NotFound(new ApiErrorResponse { Message = "Nhân viên không tồn tại" });
@@ -163,7 +192,7 @@ public class EmployeesController : ControllerBase
             return BadRequest(new ApiErrorResponse { Message = "EmployeeIds không được để trống" });
         }
 
-        var affected = await _employeeService.DeleteManyAsync(request.EmployeeIds, GetCurrentUserId(), cancellationToken);
+        var affected = await _employeeService.DeleteManyAsync(request.EmployeeIds, cancellationToken);
         return Ok(new ApiResponse<object>
         {
             Success = true,

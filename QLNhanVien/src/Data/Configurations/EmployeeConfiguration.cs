@@ -25,6 +25,11 @@ public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
             .IsRequired()
             .HasMaxLength(255);
 
+        entity.Property(e => e.NgaySinh)
+            .HasColumnName("ngay_sinh")
+            .HasColumnType("date")
+            .IsRequired();
+
         entity.Property(e => e.GioiTinh)
             .HasColumnName("gioi_tinh")
             .HasMaxLength(10)

@@ -8,6 +8,7 @@ public class EmployeeDto
     public int Id { get; set; }
     public string MaNhanVien { get; set; } = string.Empty;
     public string TenNhanVien { get; set; } = string.Empty;
+    public DateOnly NgaySinh { get; set; }
     public string GioiTinh { get; set; } = string.Empty;
     public string BoPhan { get; set; } = string.Empty;
     public decimal MucLuong { get; set; }
@@ -23,6 +24,7 @@ public class CreateEmployeeRequest
 {
     public string MaNhanVien { get; set; } = string.Empty;
     public string TenNhanVien { get; set; } = string.Empty;
+    public DateOnly NgaySinh { get; set; }
     public string GioiTinh { get; set; } = "Nam";
     public string BoPhan { get; set; } = string.Empty;
     public decimal MucLuong { get; set; }
@@ -34,9 +36,18 @@ public class CreateEmployeeRequest
 public class UpdateEmployeeRequest
 {
     public string? TenNhanVien { get; set; }
+    public DateOnly? NgaySinh { get; set; }
     public string? GioiTinh { get; set; }
     public string? BoPhan { get; set; }
     public decimal? MucLuong { get; set; }
+}
+
+/// <summary>
+/// CreateManyEmployeeRequest - Tạo nhiều nhân viên cùng lúc
+/// </summary>
+public class CreateManyEmployeeRequest
+{
+    public List<CreateEmployeeRequest> Employees { get; set; } = new();
 }
 
 /// <summary>

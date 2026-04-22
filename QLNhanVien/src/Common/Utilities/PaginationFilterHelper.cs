@@ -51,7 +51,11 @@ public static class PaginationFilterHelper
         }
 
         var param = Expression.Parameter(typeof(T), "x");
-        var property = typeof(T).GetProperty(sortBy, System.Reflection.BindingFlags.IgnoreCase | System.Reflection.BindingFlags.Public);
+        var property = typeof(T).GetProperty(
+            sortBy,
+            System.Reflection.BindingFlags.IgnoreCase |
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.Instance);
 
         if (property == null)
         {

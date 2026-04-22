@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using QLNhanVien.src.Auth;
+using QLNhanVien.src.Common.Contexts;
 using QLNhanVien.src.Data;
 using QLNhanVien.src.Data.Repositories;
 using QLNhanVien.src.Middleware;
@@ -21,11 +22,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString);
 });
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserContext, HttpCurrentUserContext>();
+
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
-
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 

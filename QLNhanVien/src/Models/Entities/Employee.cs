@@ -16,6 +16,11 @@ public class Employee : BaseEntity
     public string TenNhanVien { get; set; } = string.Empty;
 
     /// <summary>
+    /// Ngày sinh
+    /// </summary>
+    public DateOnly NgaySinh { get; set; }
+
+    /// <summary>
     /// Giới tính (Nam/Nữ/Khác)
     /// </summary>
     public string GioiTinh { get; set; } = GioiTinhConstants.Nam;
