@@ -5,34 +5,42 @@ import { storage } from '../utils/storage'
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(storage.getUser())
-  const [token, setToken] = useState(storage.getToken())
+  const [user, setUser] = useState(storage.getUser());
+  const [token, setToken] = useState(storage.getToken());
 
   const login = async (credentials) => {
-    const data = await authService.login(credentials)
-    setUser(data.user)
-    setToken(data.token)
-    return data
-  }
+    // 1. Chỉ lấy dữ liệu từ service, không để service tự setStorage
+    const data = await authService.login(credentials);
+    
+    // 2. Cập nhật đồng thời cả Storage và State tại đây
+    storage.setToken(data.accessToken); // Lưu ý: Backend bạn trả về accessToken
+    storage.setUser(data.user);
+    
+    setToken(data.accessToken);
+    setUser(data.user);
+    
+    return data;
+  };
 
   const logout = () => {
-    authService.logout()
-    setUser(null)
-    setToken(null)
-  }
+    authService.logout();
+    storage.clearAuth(); // Đảm bảo dọn sạch storage
+    setUser(null);
+    setToken(null);
+  };
 
   const value = useMemo(
     () => ({
       user,
       token,
-      isAuthenticated: Boolean(token),
+      isAuthenticated: !!token, // Check trực tiếp dựa trên state token
       login,
       logout,
     }),
-    [user, token],
-  )
+    [user, token]
+  );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

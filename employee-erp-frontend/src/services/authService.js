@@ -1,38 +1,31 @@
+
 import apiClient from './apiClient'
 import { API_ENDPOINTS } from '../constants/api'
 import { storage } from '../utils/storage'
 
 const authService = {
-  // Tam thoi fallback local neu backend chua san sang.
   async login(credentials) {
-    try {
-      const response = await apiClient.post(API_ENDPOINTS.AUTH_LOGIN, credentials)
-      const token = response?.data?.token || 'demo-token'
-      const user = response?.data?.user || {
-        fullName: credentials.username,
-        role: 'Admin',
-      }
+    // data ở đây chính là object { success, data, message, errors } trả về từ server
+    const result = await apiClient.post(API_ENDPOINTS.AUTH_LOGIN, {
+      userName: credentials.username, // Chú ý: Curl dùng userName (N viết hoa)
+      password: credentials.password
+    });
 
-      storage.setToken(token)
-      storage.setUser(user)
-
-      return { token, user }
-    } catch (error) {
-      const token = 'demo-token'
-      const user = { fullName: credentials.username, role: 'Admin' }
-      storage.setToken(token)
-      storage.setUser(user)
-      return { token, user }
+    if (result.success && result.data) {
+      const { accessToken, user } = result.data;
+      
+      storage.setToken(accessToken); // Lưu accessToken
+      storage.setUser(user);         // Lưu thông tin user
+      
+      return result.data;
+    } else {
+      throw new Error(result.message || "Đăng nhập thất bại");
     }
   },
 
   logout() {
-    storage.clearAuth()
-  },
-
-  getCurrentUser() {
-    return storage.getUser()
-  },
+    storage.clearAuth();
+  }
 }
 
-export default authService
+export default authService;

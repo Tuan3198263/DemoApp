@@ -1,9 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import { ROUTES } from '../constants/routes'
 
 const menuItems = [
-  { to: '/', icon: 'bi-speedometer2', label: 'Dashboard' },
-  { to: '/employees', icon: 'bi-people', label: 'Employees' },
-  { to: '/settings', icon: 'bi-gear', label: 'Settings' },
+  { to: ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
+  { to: ROUTES.EMPLOYEES, icon: 'bi-people', label: 'Employees' },
 ]
 
 export default function Sidebar({ collapsed, onToggle }) {
@@ -21,7 +21,6 @@ export default function Sidebar({ collapsed, onToggle }) {
           <NavLink
             key={item.to}
             to={item.to}
-            end={item.to === '/'}
             className={({ isActive }) =>
               `nav-link rounded-3 d-flex align-items-center gap-2 ${isActive ? 'active bg-primary text-white' : 'text-dark'}`
             }

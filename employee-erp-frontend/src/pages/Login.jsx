@@ -1,87 +1,81 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import Button from '../components/Button'
-import Input from '../components/Input'
-import { MESSAGES } from '../constants/messages'
-import { ROUTES } from '../constants/routes'
-import { useAuth } from '../hooks/useAuth'
-import { validateLogin } from '../validators/loginValidator'
-
-const initialForm = {
-  username: '',
-  password: '',
-}
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
+import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
-  const navigate = useNavigate()
-  const { login } = useAuth()
-  const [form, setForm] = useState(initialForm)
-  const [errors, setErrors] = useState({})
-  const [submitting, setSubmitting] = useState(false)
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  
+  const [form, setForm] = useState({ username: '', password: '' });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const onChange = (event) => {
-    const { name, value } = event.target
-    setForm((prev) => ({ ...prev, [name]: value }))
-  }
+  const onChange = (e) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (error) setError(''); // Xóa lỗi cũ khi user nhập lại
+  };
 
-  const onSubmit = async (event) => {
-    event.preventDefault()
-
-    const nextErrors = validateLogin(form)
-    setErrors(nextErrors)
-
-    if (Object.keys(nextErrors).length > 0) {
-      return
-    }
-
-    setSubmitting(true)
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
 
     try {
-      await login(form)
-      navigate(ROUTES.DASHBOARD)
-    } catch (error) {
-      setErrors({ general: MESSAGES.LOGIN_FAILED })
+      // Gọi trực tiếp authService thông qua hook useAuth
+      await login(form);
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    } catch (err) {
+      // Hiển thị lỗi thật từ Backend (400, 401, 500...)
+      setError(err?.message || "Sai tài khoản hoặc mật khẩu");
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   return (
-    <div className="login-page d-flex align-items-center justify-content-center p-3">
-      <div className="card border-0 shadow-lg login-card">
-        <div className="card-body p-4 p-md-5">
-          <h1 className="h3 mb-1">Dang nhap he thong</h1>
-          <p className="text-body-secondary mb-4">ERP Employee Management</p>
-
-          <form onSubmit={onSubmit} noValidate>
-            <Input
-              id="username"
-              name="username"
-              label="Username"
-              value={form.username}
-              onChange={onChange}
-              error={errors.username}
-              placeholder="admin"
-            />
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              label="Password"
-              value={form.password}
-              onChange={onChange}
-              error={errors.password}
-              placeholder="******"
-            />
-
-            {errors.general ? <p className="text-danger small">{errors.general}</p> : null}
-
-            <Button className="btn-primary w-100" type="submit" disabled={submitting}>
-              {submitting ? 'Dang xu ly...' : 'Dang nhap'}
-            </Button>
-          </form>
+    <div className="login-form">
+      {error && (
+        <div className="alert alert-danger py-2 small" role="alert">
+          {error}
         </div>
-      </div>
+      )}
+
+      <form onSubmit={onSubmit}>
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Tên đăng nhập</label>
+          <input
+            name="username"
+            type="text"
+            className="form-control form-control-sm"
+            value={form.username}
+            onChange={onChange}
+            disabled={submitting}
+            required
+          />
+        </div>
+
+        <div className="mb-3">
+          <label className="form-label small fw-bold">Mật khẩu</label>
+          <input
+            name="password"
+            type="password"
+            className="form-control form-control-sm"
+            value={form.password}
+            onChange={onChange}
+            disabled={submitting}
+            required
+          />
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary w-100 btn-sm fw-bold"
+          disabled={submitting}
+        >
+          {submitting ? 'Đang xử lý...' : 'Đăng nhập'}
+        </button>
+      </form>
     </div>
-  )
+  );
 }

@@ -15,10 +15,6 @@
 
 ## 3. Routing va Auth
 
-- Route private phai di qua `PrivateRoute`.
-- Trang login la route public.
-- Redirect ro rang khi user chua co token.
-
 ## 4. API & Data
 
 - Tat ca HTTP request di qua `services/apiClient.js`.

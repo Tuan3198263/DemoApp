@@ -1,39 +1,20 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
-import PrivateRoute from './components/PrivateRoute'
-import { ROUTES } from './constants/routes'
+import React from 'react'
+import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './hooks/useAuth'
-import MainLayout from './layouts/MainLayout'
-import Dashboard from './pages/Dashboard'
-import EmployeeDetail from './pages/EmployeeDetail'
-import EmployeeList from './pages/EmployeeList'
-import Login from './pages/Login'
-import Settings from './pages/Settings'
+import AppRoutes from './routes/AppRoutes'
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap-icons/font/bootstrap-icons.css'
+import './index.css'
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path={ROUTES.LOGIN} element={<Login />} />
-
-          {/* Bao ve toan bo route noi bo bang PrivateRoute. */}
-          <Route
-            element={
-              <PrivateRoute>
-                <MainLayout />
-              </PrivateRoute>
-            }
-          >
-            <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
-            <Route path={ROUTES.EMPLOYEES} element={<EmployeeList />} />
-            <Route path={ROUTES.EMPLOYEE_DETAIL} element={<EmployeeDetail />} />
-            <Route path={ROUTES.SETTINGS} element={<Settings />} />
-          </Route>
-
-          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <div className="App">
+          <AppRoutes />
+        </div>
+      </AuthProvider>
+    </BrowserRouter>
   )
 }
 

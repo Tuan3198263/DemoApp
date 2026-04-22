@@ -2,26 +2,23 @@ const TOKEN_KEY = 'erp_token'
 const USER_KEY = 'erp_user'
 
 export const storage = {
-  getToken: () => localStorage.getItem(TOKEN_KEY),
-  setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
-  clearToken: () => localStorage.removeItem(TOKEN_KEY),
+  // Lấy token
+  getToken: () => localStorage.getItem('accessToken'),
+  
+  // Lưu token (Hàm này đang bị báo lỗi nếu bạn đặt tên khác)
+  setToken: (token) => localStorage.setItem('accessToken', token),
+  
+  // Xóa token
+  removeToken: () => localStorage.removeItem('accessToken'),
 
-  getUser: () => {
-    const raw = localStorage.getItem(USER_KEY)
-    if (!raw) return null
+  // Quản lý User
+  getUser: () => JSON.parse(localStorage.getItem('user') || '{}'),
+  setUser: (user) => localStorage.setItem('user', JSON.stringify(user)),
+  removeUser: () => localStorage.removeItem('user'),
 
-    try {
-      return JSON.parse(raw)
-    } catch (error) {
-      localStorage.removeItem(USER_KEY)
-      return null
-    }
-  },
-
-  setUser: (user) => localStorage.setItem(USER_KEY, JSON.stringify(user)),
-  clearUser: () => localStorage.removeItem(USER_KEY),
+  // Xóa sạch khi Logout
   clearAuth: () => {
-    localStorage.removeItem(TOKEN_KEY)
-    localStorage.removeItem(USER_KEY)
-  },
-}
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('user');
+  }
+};
