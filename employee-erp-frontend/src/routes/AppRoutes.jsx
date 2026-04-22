@@ -7,7 +7,7 @@ import MainLayout from '../layouts/MainLayout'
 import AuthLayout from '../layouts/AuthLayout'
 // Pages
 import Dashboard from '../pages/Dashboard'
-import EmployeeList from '../pages/EmployeeList'
+import EmployeeList from '../pages/Employee'
 import Login from '../pages/Login'
 import NotFound from '../pages/NotFound'
 

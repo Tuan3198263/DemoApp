@@ -2,15 +2,15 @@ import { NavLink } from 'react-router-dom'
 import { ROUTES } from '../constants/routes'
 
 const menuItems = [
-  { to: ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Dashboard' },
-  { to: ROUTES.EMPLOYEES, icon: 'bi-people', label: 'Employees' },
+  { to: ROUTES.DASHBOARD, icon: 'bi-speedometer2', label: 'Trang chủ' },
+  { to: ROUTES.EMPLOYEES, icon: 'bi-people', label: 'Nhân viên' },
 ]
 
 export default function Sidebar({ collapsed, onToggle }) {
   return (
     <aside className={`sidebar border-end bg-white ${collapsed ? 'collapsed' : ''}`}>
       <div className="p-3 border-bottom d-flex align-items-center justify-content-between">
-        <strong className="brand-name">ERP Mini</strong>
+        <strong className="brand-name">Quản lý nhân viên</strong>
         <button className="btn btn-sm btn-outline-secondary d-none d-lg-inline" onClick={onToggle}>
           <i className="bi bi-layout-sidebar"></i>
         </button>

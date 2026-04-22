@@ -9,7 +9,7 @@ export default function Topbar({ onOpenMobileMenu }) {
         <button className="btn btn-outline-secondary d-lg-none" onClick={onOpenMobileMenu}>
           <i className="bi bi-list"></i>
         </button>
-        <h1 className="h5 mb-0">Employee Management System</h1>
+        
       </div>
 
       <div className="d-flex align-items-center gap-3">
@@ -37,7 +37,7 @@ export default function Topbar({ onOpenMobileMenu }) {
             </li>
             <li>
               <button className="dropdown-item text-danger" onClick={logout}>
-                Dang xuat
+                Đăng xuất
               </button>
             </li>
           </ul>
