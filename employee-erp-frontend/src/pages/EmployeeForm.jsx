@@ -86,6 +86,7 @@ export default function EmployeeForm({ data, onChange, onRemove, isMultiple = fa
               className="form-control" 
               value={data.mucLuong || ''} 
               onChange={handleChange}
+              min="0"
               required
             />
             <span className="input-group-text">₫</span>

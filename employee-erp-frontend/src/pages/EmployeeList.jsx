@@ -10,7 +10,7 @@ const columns = [
   { key: 'gioiTinh', label: 'Giới tính' },
   { key: 'boPhan', label: 'Bộ phận' },
   { key: 'mucLuong', label: 'Mức lương', sortable: true },
-  {key: 'actions', Label: 'Thao tác'}
+  {key: 'actions', label: 'Thao tác'}
 ];
 
 export default function EmployeeList() {
@@ -19,7 +19,6 @@ export default function EmployeeList() {
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
   
   // State quản lý Modal
-  const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState(null);
 
@@ -60,12 +59,22 @@ const handleOpenEdit = (emp) => {
   setShowEdit(true);
 };
 
-const handleDelete = (id, maNV) => {
-    if (window.confirm(`Xóa nhân viên mã: ${maNV}?`)) {
-      console.log("Xóa ID:", id);
+const handleDelete = async (id, maNV) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa nhân viên ${maNV}?`)) {
+      setLoading(true); // Bật loading khi đang xóa
+      try {
+        const res = await employeeService.deleteEmployees([id]);
+        if (res.success) {
+          alert("Xóa thành công!");
+          fetchEmployees(); // Load lại bảng
+        }
+      } catch (error) {
+        alert(error.response?.data?.message || "Lỗi khi xóa nhân viên");
+      } finally {
+        setLoading(false);
+      }
     }
   };
-
   // Xử lý Sort mức lương
   const handleSortSalary = () => {
     setParams(prev => ({
@@ -180,6 +189,7 @@ const handleDelete = (id, maNV) => {
   show={showEdit} 
   employeeData={selectedEmp} 
   onClose={() => { setShowEdit(false); setSelectedEmp(null); }} 
+  onRefresh={fetchEmployees} // Thêm dòng này
 />
         </div>
         

@@ -1,10 +1,12 @@
 // components/ThemNhanVien.jsx
 import React, { useState } from 'react';
 import EmployeeForm from './EmployeeForm';
+import employeeService from '../services/employeeService'; // Import service
 
-export default function ThemNhanVien({ show, onClose }) {
+export default function ThemNhanVien({ show, onClose, onRefresh }) {
   const [listAdd, setListAdd] = useState([{}]);
-
+  const [loading, setLoading] = useState(false);
+  
   const handleRowChange = (index, newData) => {
     const newList = [...listAdd];
     newList[index] = newData;
@@ -12,14 +14,61 @@ export default function ThemNhanVien({ show, onClose }) {
   };
 
   const addRow = () => setListAdd([...listAdd, {}]);
+
   const removeRow = (index) => {
     if (listAdd.length > 1) setListAdd(listAdd.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
-    console.log("Dữ liệu gửi lên API (Thêm mới):", listAdd);
-    onClose();
-    setListAdd([{}]); // Reset form sau khi đóng
+// Hàm kiểm tra logic trước khi gọi API
+  const validateData = () => {
+    const codes = listAdd.map(item => item.maNhanVien?.trim().toLowerCase());
+    
+    // 1. Kiểm tra mã nhân viên bị trùng ngay trong danh sách thêm mới
+    const hasDuplicate = codes.some((code, index) => codes.indexOf(code) !== index);
+    if (hasDuplicate) {
+      alert("Lỗi: Các mã nhân viên trong danh sách thêm mới không được trùng nhau!");
+      return false;
+    }
+
+    // 2. Kiểm tra các trường bắt buộc (bổ sung thêm nếu cần ngoài thuộc tính required của HTML5)
+    for (const item of listAdd) {
+      if (!item.maNhanVien || !item.tenNhanVien || !item.boPhan) {
+        alert("Lỗi: Vui lòng nhập đầy đủ các trường bắt buộc cho tất cả nhân viên!");
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSave = async (e) => {
+    if (e) e.preventDefault(); // Chặn load lại trang
+
+    // Chạy validation frontend
+    if (!validateData()) return;
+
+    setLoading(true);
+    try {
+      // Gọi API: POST /api/employees/batch
+      // Dữ liệu truyền vào là mảng listAdd
+      const result = await employeeService.addEmployees(listAdd);
+
+      if (result.success) {
+        alert("Thêm danh sách nhân viên thành công!");
+        setListAdd([{}]); // Reset form
+        onClose(); // Đóng modal
+        if (onRefresh) onRefresh(); // Tải lại bảng dữ liệu ở component cha
+      } else {
+        alert(result.message || "Có lỗi xảy ra!");
+      }
+    } catch (error) {
+      // Bắt lỗi từ BE (Ví dụ: BE báo mã NV đã tồn tại trong DB)
+      const errorMsg = error.response?.data?.message || "Mã nhân viên đã tồn tại hoặc dữ liệu không hợp lệ!";
+      alert("Lỗi: " + errorMsg);
+      console.error("API Error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!show) return null;
