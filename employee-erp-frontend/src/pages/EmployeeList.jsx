@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import employeeService from '../services/employeeService';
 import Table from '../components/Table';
+import SuaNhanVien from './SuaNhanVien';
 
 const columns = [
   { key: 'maNhanVien', label: 'Mã NV' },
@@ -9,6 +10,7 @@ const columns = [
   { key: 'gioiTinh', label: 'Giới tính' },
   { key: 'boPhan', label: 'Bộ phận' },
   { key: 'mucLuong', label: 'Mức lương', sortable: true },
+  {key: 'actions', Label: 'Thao tác'}
 ];
 
 export default function EmployeeList() {
@@ -16,6 +18,11 @@ export default function EmployeeList() {
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
   
+  // State quản lý Modal
+  const [showAdd, setShowAdd] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [selectedEmp, setSelectedEmp] = useState(null);
+
   const [params, setParams] = useState({
     page: 1,
     pageSize: 10,
@@ -44,6 +51,20 @@ export default function EmployeeList() {
   useEffect(() => {
     fetchEmployees();
   }, [params]);
+
+ // Mở modal sửa và gán dữ liệu nhân viên được chọn [cite: 67, 103]
+const handleOpenEdit = (emp) => {
+  // Tìm lại object gốc trong danh sách employees thông qua ID hoặc Mã NV
+  const originalEmp = employees.find(e => e.id === emp.id);
+  setSelectedEmp(originalEmp || emp);
+  setShowEdit(true);
+};
+
+const handleDelete = (id, maNV) => {
+    if (window.confirm(`Xóa nhân viên mã: ${maNV}?`)) {
+      console.log("Xóa ID:", id);
+    }
+  };
 
   // Xử lý Sort mức lương
   const handleSortSalary = () => {
@@ -83,15 +104,15 @@ export default function EmployeeList() {
               onChange={(e) => setParams(p => ({ ...p, boPhan: e.target.value, page: 1 }))}
             >
               <option value="">-- Tất cả bộ phận --</option>
-              <option value="HR">Phòng Nhân sự (HR)</option>
-              <option value="IT">Phòng Kỹ thuật (IT)</option>
-              <option value="Finance">Phòng Tài chính</option>
-              <option value="Sales">Phòng Kinh doanh</option>
+              <option value="HR">HR</option>
+              <option value="IT">IT</option>
+              <option value="Finance">Finance</option>
+              <option value="Marketing">Marketing</option>
             </select>
           </div>
         </div>
 
-        {/* BẢNG DỮ LIỆU */}
+ {/* BẢNG DỮ LIỆU */}
         <div className="table-responsive">
           <table className="table table-hover align-middle shadow-sm border">
             <thead className="table-light">
@@ -100,13 +121,12 @@ export default function EmployeeList() {
                   <th 
                     key={col.key} 
                     onClick={col.sortable ? handleSortSalary : null}
-                    className={col.sortable ? 'user-select-none' : ''}
                     style={{ cursor: col.sortable ? 'pointer' : 'default', whiteSpace: 'nowrap' }}
                   >
                     <div className="d-flex align-items-center">
                       {col.label}
                       {col.sortable && (
-                        <span className="ms-2 d-flex flex-column" style={{ fontSize: '10px', lineHeight: '1' }}>
+                        <span className="ms-2 d-flex flex-column" style={{ fontSize: '10px' }}>
                           <i className={`bi bi-caret-up-fill ${params.sortBy === 'mucLuong' && !params.descending ? 'text-primary' : 'text-muted'}`}></i>
                           <i className={`bi bi-caret-down-fill ${params.sortBy === 'mucLuong' && params.descending ? 'text-primary' : 'text-muted'}`}></i>
                         </span>
@@ -122,7 +142,32 @@ export default function EmployeeList() {
               ) : tableRows.length > 0 ? (
                 tableRows.map((row, idx) => (
                   <tr key={idx}>
-                    {columns.map(col => <td key={col.key}>{row[col.key]}</td>)}
+                    {/* Render các cột dữ liệu bình thường */}
+                    {columns.map(col => {
+                      if (col.key === 'actions') {
+                        return (
+                          <td key={col.key}>
+                            <div className="d-flex gap-2">
+                              <button 
+                                className="btn btn-outline-primary btn-sm border-0" 
+                                onClick={() => handleOpenEdit(row)}
+                                title="Sửa"
+                              >
+                                <i className="bi bi-pencil-square"></i>
+                              </button>
+                              <button 
+                                className="btn btn-outline-danger btn-sm border-0" 
+                                onClick={() => handleDelete(row.id, row.maNhanVien)}
+                                title="Xóa"
+                              >
+                                <i className="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        );
+                      }
+                      return <td key={col.key}>{row[col.key]}</td>;
+                    })}
                   </tr>
                 ))
               ) : (
@@ -130,7 +175,14 @@ export default function EmployeeList() {
               )}
             </tbody>
           </table>
+          {/* Đặt Modal Sửa ở đây */}
+<SuaNhanVien 
+  show={showEdit} 
+  employeeData={selectedEmp} 
+  onClose={() => { setShowEdit(false); setSelectedEmp(null); }} 
+/>
         </div>
+        
 
         {/* PHÂN TRANG */}
         <div className="d-flex justify-content-between align-items-center mt-3">
