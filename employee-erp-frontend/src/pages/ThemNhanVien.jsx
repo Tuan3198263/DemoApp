@@ -6,7 +6,7 @@ import employeeService from '../services/employeeService'; // Import service
 export default function ThemNhanVien({ show, onClose, onRefresh }) {
   const [listAdd, setListAdd] = useState([{}]);
   const [loading, setLoading] = useState(false);
-  
+
   const handleRowChange = (index, newData) => {
     const newList = [...listAdd];
     newList[index] = newData;
@@ -57,7 +57,9 @@ export default function ThemNhanVien({ show, onClose, onRefresh }) {
         alert("Thêm danh sách nhân viên thành công!");
         setListAdd([{}]); // Reset form
         onClose(); // Đóng modal
-        if (onRefresh) onRefresh(); // Tải lại bảng dữ liệu ở component cha
+      if (typeof onRefresh === 'function') {
+           await onRefresh(); 
+        }
       } else {
         alert(result.message || "Có lỗi xảy ra!");
       }

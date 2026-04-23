@@ -4,6 +4,11 @@ import ThemNhanVien from './ThemNhanVien';
 
 export default function Employee() {
   const [showAdd, setShowAdd] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const handleRefresh = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
 
   return (
     <div className="container-fluid py-3">
@@ -18,10 +23,14 @@ export default function Employee() {
       </div>
 
       {/* Danh sách hiển thị */}
-      <EmployeeList />
+      <EmployeeList refreshTrigger={refreshTrigger} />
 
       {/* Modal thêm nằm tại đây */}
-      <ThemNhanVien show={showAdd} onClose={() => setShowAdd(false)} />
+      <ThemNhanVien 
+        show={showAdd} 
+        onClose={() => setShowAdd(false)} 
+        onRefresh={handleRefresh} 
+      />
     </div>
   );
 }

@@ -4,16 +4,17 @@ import Table from '../components/Table';
 import SuaNhanVien from './SuaNhanVien';
 
 const columns = [
+   {key: 'actions', label: 'Thao tác'},
   { key: 'maNhanVien', label: 'Mã NV' },
   { key: 'tenNhanVien', label: 'Tên nhân viên' },
   { key: 'ngaySinh', label: 'Ngày sinh' },
   { key: 'gioiTinh', label: 'Giới tính' },
   { key: 'boPhan', label: 'Bộ phận' },
   { key: 'mucLuong', label: 'Mức lương', sortable: true },
-  {key: 'actions', label: 'Thao tác'}
+ 
 ];
 
-export default function EmployeeList() {
+export default function EmployeeList({ refreshTrigger, onRefresh }) {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 10, totalItems: 0, totalPages: 0 });
@@ -39,6 +40,9 @@ export default function EmployeeList() {
       if (res.success) {
         setEmployees(res.data);
         setPagination(res.pagination);
+        if (typeof onRefresh === 'function') {
+           onRefresh(fetchEmployees);
+        }
       }
     } catch (error) {
       console.error("Lỗi:", error);
@@ -49,7 +53,7 @@ export default function EmployeeList() {
 
   useEffect(() => {
     fetchEmployees();
-  }, [params]);
+  }, [params, refreshTrigger]);
 
  // Mở modal sửa và gán dữ liệu nhân viên được chọn [cite: 67, 103]
 const handleOpenEdit = (emp) => {
